@@ -9,6 +9,8 @@
     runGame();
   }
 
+  var frameCount = 0;
+
   /**
    * Runs the game
    */
@@ -40,6 +42,12 @@
     var gameLoop = function() {
       // repaint
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      frameCount++;
+
+      // generate a new enemy every four seconds
+      if (frameCount % 100 === 0) {
+        createEnemy();
+      }
 
       // update enemies
       Object.keys(enemyList).forEach(function(key) {
@@ -49,18 +57,33 @@
         if (testRectCollision(player, enemyList[key])) {
           if (player.hp > 0) {
             player.hp -= 1;
-          } else {
-            var timeSurvived = Math.floor((Date.now() - gameStartTime) / 1000);
-            console.log("You survived for " + timeSurvived + " seconds");
-            player.hp = 10;
-            gameStartTime = Date.now();
           }
         }
       });
 
+      // test for and handle player death
+      if (player.hp <= 0) {
+        var timeSurvived = Math.floor((Date.now() - gameStartTime) / 1000);
+        console.log("You survived for " + timeSurvived + " seconds");
+        startNewGame();
+      }
+
       // update players
       drawEntity(player);
       ctx.fillText("HP: " + player.hp, 0, 30);
+    };
+
+    /**
+     *
+     */
+    var startNewGame = function() {
+      player.hp = 10;
+      gameStartTime = Date.now();
+      frameCount = 0;
+      enemyList = {};
+      for (var i = 0; i < ENEMY_COUNT; i++) {
+        createEnemy();
+      }
     };
 
     /**
@@ -70,10 +93,12 @@
       var minPos = 0;
       var minSpeed = -15;
       var maxSpeed = 15;
+      var minSize = 5;
+      var maxSize = 50;
       var name = "E" + Object.keys(enemyList).length.toString();
       var enemy = {
-        width: 30,
-        height: 30,
+        width: Math.random() * (maxSize - minSize + 1) + minSize,
+        height: Math.random() * (maxSize - minSize + 1) + minSize,
         color: "red",
         x: Math.floor(Math.random() * (CANVAS_WIDTH - minPos)) + minPos,
         y: Math.floor(Math.random() * (CANVAS_HEIGHT - minPos)) + minPos,
@@ -95,17 +120,29 @@
       );
     };
 
-    // create the desired number of enemies
-    for (var i = 0; i < ENEMY_COUNT; i++) {
-      createEnemy();
-    }
+    // start game
+    startNewGame();
     // update game state
     setInterval(gameLoop, UPDATE_INTERVAL);
 
     document.onmousemove = function(mouse) {
-      var mouseX = mouse.clientX;
-      var mouseY = mouse.clientY;
+      var mouseX = mouse.clientX - ctxEl.getBoundingClientRect().left;
+      var mouseY = mouse.clientY - ctxEl.getBoundingClientRect().top;
 
+      var halfPlayerWidth = player.width / 2;
+      var halfPlayerHeight = player.height / 2;
+      if (mouseX < halfPlayerWidth) {
+        mouseX = halfPlayerWidth;
+      }
+      if (mouseX > CANVAS_WIDTH - halfPlayerWidth) {
+        mouseX = CANVAS_WIDTH - halfPlayerWidth;
+      }
+      if (mouseY < halfPlayerHeight) {
+        mouseY = halfPlayerHeight;
+      }
+      if (mouseY > CANVAS_HEIGHT - halfPlayerHeight) {
+        mouseY = CANVAS_HEIGHT - halfPlayerHeight;
+      }
       player.x = mouseX;
       player.y = mouseY;
     };
