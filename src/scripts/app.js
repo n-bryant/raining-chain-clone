@@ -33,7 +33,12 @@
       spdY: 5,
       name: "P",
       hp: 10,
-      attackSpeed: 1
+      attackSpeed: 1,
+      attackCounter: 0,
+      pressingUp: false,
+      pressingRight: false,
+      pressingDown: false,
+      pressingLeft: false
     };
 
     var enemyList = {};
@@ -60,9 +65,7 @@
       }
 
       // generate a new bullet every second
-      if (frameCount % Math.round(25 / player.attackSpeed) === 0) {
-        createBullet();
-      }
+      player.attackCounter += player.attackSpeed;
 
       // update enemies
       for (var key in enemyList) {
@@ -121,13 +124,14 @@
       }
 
       // update players
+      updatePlayerPosition();
       drawEntity(player);
       ctx.fillText("HP: " + player.hp, 0, 30);
       ctx.fillText("Score: " + score, 200, 30);
     };
 
     /**
-     *
+     * Resets game state
      */
     var startNewGame = function() {
       player.hp = 10;
@@ -222,26 +226,95 @@
     // update game state
     setInterval(gameLoop, UPDATE_INTERVAL);
 
+    // mouse move handler
     document.onmousemove = function(mouse) {
-      var mouseX = mouse.clientX - ctxEl.getBoundingClientRect().left;
-      var mouseY = mouse.clientY - ctxEl.getBoundingClientRect().top;
+      // var mouseX = mouse.clientX - ctxEl.getBoundingClientRect().left;
+      // var mouseY = mouse.clientY - ctxEl.getBoundingClientRect().top;
+      // var halfPlayerWidth = player.width / 2;
+      // var halfPlayerHeight = player.height / 2;
+      // if (mouseX < halfPlayerWidth) {
+      //   mouseX = halfPlayerWidth;
+      // }
+      // if (mouseX > CANVAS_WIDTH - halfPlayerWidth) {
+      //   mouseX = CANVAS_WIDTH - halfPlayerWidth;
+      // }
+      // if (mouseY < halfPlayerHeight) {
+      //   mouseY = halfPlayerHeight;
+      // }
+      // if (mouseY > CANVAS_HEIGHT - halfPlayerHeight) {
+      //   mouseY = CANVAS_HEIGHT - halfPlayerHeight;
+      // }
+      // player.x = mouseX;
+      // player.y = mouseY;
+    };
 
+    // click handler
+    document.onclick = function() {
+      if (player.attackCounter > 25) {
+        createBullet();
+        player.attackCounter = 0;
+      }
+    };
+
+    // key handlers
+    document.onkeydown = function(event) {
+      if (event.keyCode === 68)
+        // d
+        player.pressingRight = true;
+      else if (event.keyCode === 83)
+        // s
+        player.pressingDown = true;
+      else if (event.keyCode === 65)
+        // a
+        player.pressingLeft = true;
+      else if (event.keyCode === 87)
+        // w
+        player.pressingUp = true;
+    };
+    document.onkeyup = function(event) {
+      if (event.keyCode === 68)
+        // d
+        player.pressingRight = false;
+      else if (event.keyCode === 83)
+        // s
+        player.pressingDown = false;
+      else if (event.keyCode === 65)
+        // a
+        player.pressingLeft = false;
+      else if (event.keyCode === 87)
+        // w
+        player.pressingUp = false;
+    };
+
+    var updatePlayerPosition = function() {
+      if (player.pressingUp) {
+        player.y -= 10;
+      }
+      if (player.pressingRight) {
+        player.x += 10;
+      }
+      if (player.pressingDown) {
+        player.y += 10;
+      }
+      if (player.pressingLeft) {
+        player.x -= 10;
+      }
+
+      // make sure the player stays within bounds
       var halfPlayerWidth = player.width / 2;
       var halfPlayerHeight = player.height / 2;
-      if (mouseX < halfPlayerWidth) {
-        mouseX = halfPlayerWidth;
+      if (player.x < halfPlayerWidth) {
+        player.x = halfPlayerWidth;
       }
-      if (mouseX > CANVAS_WIDTH - halfPlayerWidth) {
-        mouseX = CANVAS_WIDTH - halfPlayerWidth;
+      if (player.x > CANVAS_WIDTH - halfPlayerWidth) {
+        player.x = CANVAS_WIDTH - halfPlayerWidth;
       }
-      if (mouseY < halfPlayerHeight) {
-        mouseY = halfPlayerHeight;
+      if (player.y < halfPlayerHeight) {
+        player.y = halfPlayerHeight;
       }
-      if (mouseY > CANVAS_HEIGHT - halfPlayerHeight) {
-        mouseY = CANVAS_HEIGHT - halfPlayerHeight;
+      if (player.y > CANVAS_HEIGHT - halfPlayerHeight) {
+        player.y = CANVAS_HEIGHT - halfPlayerHeight;
       }
-      player.x = mouseX;
-      player.y = mouseY;
     };
 
     /**
