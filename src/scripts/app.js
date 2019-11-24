@@ -10,6 +10,7 @@
   }
 
   var frameCount = 0;
+  var score = 0;
 
   /**
    * Runs the game
@@ -31,10 +32,13 @@
       y: 40,
       spdY: 5,
       name: "P",
-      hp: 10
+      hp: 10,
+      attackSpeed: 1
     };
 
     var enemyList = {};
+    var upgradeList = {};
+    var bulletList = {};
 
     /**
      * Callback for the game update interval
@@ -43,14 +47,25 @@
       // repaint
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       frameCount++;
+      score++;
 
       // generate a new enemy every four seconds
       if (frameCount % 100 === 0) {
         createEnemy();
       }
 
+      // generate a new upgrade every three seconds
+      if (frameCount % 75 === 0) {
+        createUpgrade();
+      }
+
+      // generate a new bullet every second
+      if (frameCount % Math.round(25 / player.attackSpeed) === 0) {
+        createBullet();
+      }
+
       // update enemies
-      Object.keys(enemyList).forEach(function(key) {
+      for (var key in enemyList) {
         updateEntity(enemyList[key]);
 
         // test for a collision between enemy and player
@@ -59,7 +74,44 @@
             player.hp -= 1;
           }
         }
-      });
+      }
+      // update upgrades
+      for (var key in upgradeList) {
+        updateEntity(upgradeList[key]);
+
+        // test for a collision between upgrade and player
+        if (testRectCollision(player, upgradeList[key])) {
+          if (upgradeList[key].category === "score") {
+            score += 1000;
+          } else if (upgradeList[key].category === "attackSpeed") {
+            player.attackSpeed += 3;
+          }
+          delete upgradeList[key];
+        }
+      }
+      // update bullets
+      for (var key in bulletList) {
+        var bullet = bulletList[key];
+        updateEntity(bullet);
+
+        var bulletShouldBeRemoved = false;
+        bullet.timer++;
+        if (bullet.timer > 100) {
+          bulletShouldBeRemoved = true;
+        }
+
+        for (var enemy in enemyList) {
+          if (testRectCollision(bullet, enemyList[enemy])) {
+            bulletShouldBeRemoved = true;
+            delete enemyList[enemy];
+            break;
+          }
+        }
+
+        if (bulletShouldBeRemoved) {
+          delete bulletList[key];
+        }
+      }
 
       // test for and handle player death
       if (player.hp <= 0) {
@@ -71,6 +123,7 @@
       // update players
       drawEntity(player);
       ctx.fillText("HP: " + player.hp, 0, 30);
+      ctx.fillText("Score: " + score, 200, 30);
     };
 
     /**
@@ -80,7 +133,10 @@
       player.hp = 10;
       gameStartTime = Date.now();
       frameCount = 0;
+      score = 0;
       enemyList = {};
+      upgradeList = {};
+      bulletList = {};
       for (var i = 0; i < ENEMY_COUNT; i++) {
         createEnemy();
       }
@@ -107,6 +163,47 @@
         name
       };
       enemyList[name] = enemy;
+    };
+
+    /**
+     * Creates an upgrade and appends it to the upgrades list
+     */
+    var createUpgrade = function() {
+      var minPos = 0;
+      var categoryFlip = Math.random() < 0.5;
+      var name = "U" + Object.keys(upgradeList).length.toString();
+      var upgrade = {
+        width: 10,
+        height: 10,
+        color: categoryFlip < 0.5 ? "orange" : "purple",
+        x: Math.floor(Math.random() * (CANVAS_WIDTH - minPos)) + minPos,
+        y: Math.floor(Math.random() * (CANVAS_HEIGHT - minPos)) + minPos,
+        spdX: 0,
+        spdY: 0,
+        name,
+        category: categoryFlip < 0.5 ? "score" : "attackSpeed"
+      };
+      upgradeList[name] = upgrade;
+    };
+
+    /**
+     * Creates a bullet and appends it to the bullets list
+     */
+    var createBullet = function() {
+      var angle = ((Math.random() * (360 - 0 + 1)) / 180) * Math.PI;
+      var name = "U" + Object.keys(bulletList).length.toString();
+      var bullet = {
+        width: 10,
+        height: 10,
+        color: "black",
+        x: player.x,
+        y: player.y,
+        spdX: Math.cos(angle) * 5,
+        spdY: Math.sin(angle) * 5,
+        name,
+        timer: 0
+      };
+      bulletList[name] = bullet;
     };
 
     /**
